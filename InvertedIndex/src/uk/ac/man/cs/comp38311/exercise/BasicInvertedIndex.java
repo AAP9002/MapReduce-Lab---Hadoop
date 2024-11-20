@@ -54,11 +54,9 @@ public class BasicInvertedIndex extends Configured implements Tool
         
         // TOKEN should be set to the current token rather than creating a 
         // new Text object for each one
-        @SuppressWarnings("unused")
         private final static Text TOKEN = new Text();
 
         // The StopAnalyser class helps remove stop words
-        @SuppressWarnings("unused")
         private StopAnalyser stopAnalyser = new StopAnalyser();
         
         // The stem method wraps the functionality of the Stemmer
@@ -87,6 +85,27 @@ public class BasicInvertedIndex extends Configured implements Tool
             String[] pathComponents = inputFilePath.split("/");
             INPUTFILE.set(pathComponents[pathComponents.length - 1]);
         }
+
+        private String CleanWord(String word){
+            // stemming
+            word = stem(word);
+            
+            // ignore stop words
+            if(stopAnalyser.isStopWord(word)){
+                return "";
+            }
+
+            // remove non alpha charcters
+            word = word.replaceAll("[^a-zA-Z]", "");
+
+            // convert to lowercase
+            word = word.toLowerCase();
+
+            // strip
+            word = word.strip();
+
+            return word;
+        }
          
         // TODO
         // This Mapper should read in a line, convert it to a set of tokens
@@ -94,7 +113,27 @@ public class BasicInvertedIndex extends Configured implements Tool
         public void map(Object key, Text value, Context context)
                 throws IOException, InterruptedException
         {
+             // The line is broken up and turned into an iterator 
+             String line = value.toString();
+             StringTokenizer itr = new StringTokenizer(line);
+             
+             
+             // While there are more tokens in the input
+             while (itr.hasMoreTokens())
+             {
+                 String token = itr.nextToken();
 
+                 token = CleanWord(token);
+
+                 if(token.isEmpty()){
+                    continue;
+                 }
+ 
+                 TOKEN.set(token);
+                 
+                 // context.write() is also known as 'output' or 'emit'
+                 context.write(TOKEN, INPUTFILE);
+             }
         }
     }
 
@@ -110,7 +149,15 @@ public class BasicInvertedIndex extends Configured implements Tool
                 Iterable<Text> values,
                 Context context) throws IOException, InterruptedException
         {
+            // For each of the values in the input, sum them up
+            ArrayListWritable<Text> LIST = new ArrayListWritable<>();
+            Iterator<Text> iter = values.iterator();
+            
+            while (iter.hasNext())
+                LIST.add(iter.next());
 
+            // Output the key with the token
+            context.write(key, LIST);
         }
     }
 
