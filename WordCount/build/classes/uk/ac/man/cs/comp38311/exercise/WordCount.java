@@ -38,6 +38,7 @@ import org.apache.log4j.Logger;
 
 import uk.ac.man.cs.comp38311.util.XParser;
 
+
 public class WordCount extends Configured implements Tool
 {
     // A logger is used to output text to system.out nicely
@@ -50,6 +51,20 @@ public class WordCount extends Configured implements Tool
         // Use these objects instead of creating new ones every time
         private final static IntWritable ONE = new IntWritable(1);
         private final static Text WORD = new Text();
+
+        private String CleanWord(String word){
+            word = word.replaceAll("['s]", "");
+            // remove non alpha charcters
+            word = word.replaceAll("[^a-zA-Z0-9]", "");
+
+            // convert to lowercase
+            word = word.toLowerCase();
+
+            // strip
+            word = word.strip();
+
+            return word;
+        }
 
         // The map method takes in a line from a file, splits it into tokens
         // then outputs each token with a value of 1
@@ -64,8 +79,15 @@ public class WordCount extends Configured implements Tool
             // While there are more tokens in the input, output with value 1
             while (itr.hasMoreTokens())
             {
-            	String token = itr.nextToken(); 
-                WORD.set(token);
+            	String token = itr.nextToken();
+
+                String clean_token = CleanWord(token);
+
+                if(clean_token.isEmpty()){
+                    continue;
+                }
+
+                WORD.set(clean_token);
                 
                 // context.write() is also known as 'output' or 'emit'
                 context.write(WORD, ONE);
